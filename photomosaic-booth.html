@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sense of Self</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #18243E;
+    --surface: #111;
+    --accent: #2f446d;
+    --accent2: #AB8D6B;
+    --text: #b8c6d7;
+    --dim: #444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.96);
+  }
+
+  /* ── BOOTH SCREEN ── */
+  #booth-screen {
+    gap: 0;
+    background: var(--bg);
+  }
+
+  .booth-header {
+    width: 100%;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #222;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.2rem;
+    letter-spacing: 0.12em;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  .status-pill {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--dim);
+    color: var(--dim);
+    transition: all 0.3s;
+  }
+  .status-pill.ready { border-color: #2ecc71; color: #2ecc71; }
+  .status-pill.loading { border-color: var(--accent2); color: var(--accent2); animation: pulse 1s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .booth-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    gap: 40px;
+    width: 100%;
+  }
+
+  .viewfinder-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .viewfinder-frame {
+    position: absolute;
+    inset: -12px;
+    border: 2px solid var(--accent);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .viewfinder-frame::before, .viewfinder-frame::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    background: var(--accent);
+  }
+  .viewfinder-frame::before { top: -2px; left: -2px; }
+  .viewfinder-frame::after { bottom: -2px; right: -2px; }
+
+  #video {
+    display: block;
+    width: 480px;
+    height: 360px;
+    object-fit: cover;
+    transform: scaleX(-1);
+    background: #111;
+    border-radius: 2px;
+  }
+
+  .countdown-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 10rem;
+    color: white;
+    text-shadow: 0 0 40px var(--accent);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.2s;
+  }
+  .countdown-overlay.show { opacity: 1; }
+
+  .flash-overlay {
+    position: absolute;
+    inset: 0;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 20;
+    transition: opacity 0.05s;
+  }
+  .flash-overlay.flash { opacity: 1; }
+
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    min-width: 220px;
+  }
+
+  .panel-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin-bottom: 6px;
+  }
+
+  .tile-size-group { display: flex; flex-direction: column; gap: 8px; }
+
+  .tile-btn {
+    background: #181818;
+    border: 1px solid #2a2a2a;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    padding: 10px 16px;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    border-radius: 3px;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .tile-btn:hover { border-color: var(--dim); }
+  .tile-btn.active { border-color: var(--accent); color: var(--accent); background: #1a0800; }
+
+  .shoot-btn {
+    margin-top: 8px;
+    background: var(--accent);
+    border: none;
+    color: white;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.1em;
+    padding: 16px 32px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+    width: 100%;
+  }
+  .shoot-btn:hover { background: #ff5520; transform: translateY(-1px); }
+  .shoot-btn:active { transform: translateY(1px); }
+  .shoot-btn:disabled { background: var(--dim); cursor: not-allowed; transform: none; }
+
+  .library-preview {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 3px;
+    width: 100%;
+  }
+  .lib-thumb {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .lib-thumb.loaded { opacity: 1; }
+
+  /* ── MOSAIC SCREEN ── */
+  #mosaic-screen {
+    background: #050505;
+    gap: 0;
+  }
+
+  .mosaic-header {
+    width: 100%;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #222;
+    flex-shrink: 0;
+  }
+
+  .mosaic-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.15em;
+    color: var(--accent2);
+  }
+
+  .back-btn {
+    background: transparent;
+    border: 1px solid var(--dim);
+    color: var(--dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 8px 18px;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+  .back-btn:hover { border-color: var(--text); color: var(--text); }
+
+  .download-btn {
+    background: var(--accent2);
+    border: none;
+    color: #000;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    padding: 8px 20px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+  }
+  .download-btn:hover { background: #ffe030; }
+
+  .mosaic-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    gap: 40px;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .mosaic-container {
+    position: relative;
+    flex-shrink: 0;
+    border: 1px solid #222;
+  }
+
+  #mosaicCanvas {
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  .progress-wrap {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .progress-wrap.done { display: none; }
+
+  .progress-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  .progress-bar-outer {
+    width: 240px;
+    height: 3px;
+    background: #222;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s;
+  }
+
+  .mosaic-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 200px;
+  }
+
+  .stat-block { display: flex; flex-direction: column; gap: 4px; }
+  .stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    color: var(--accent2);
+    line-height: 1;
+  }
+  .stat-key {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+
+  .compare-toggle {
+    display: flex;
+    gap: 0;
+  }
+  .compare-btn {
+    flex: 1;
+    background: #181818;
+    border: 1px solid #2a2a2a;
+    color: var(--dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    padding: 8px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .compare-btn:first-child { border-radius: 3px 0 0 3px; }
+  .compare-btn:last-child { border-radius: 0 3px 3px 0; }
+  .compare-btn.active { background: #1a0800; border-color: var(--accent); color: var(--accent); }
+
+  /* original overlay for compare */
+  #originalCanvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+  #originalCanvas.show { opacity: 0.9; }
+
+  canvas { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ══════════ BOOTH SCREEN ══════════ -->
+<div class="screen" id="booth-screen">
+  <header class="booth-header">
+    <div class="logo">MOSAIC<span>BOOTH</span></div>
+    <div class="status-pill loading" id="status-pill">LOADING LIBRARY</div>
+  </header>
+
+  <div class="booth-body">
+    <div class="viewfinder-wrap">
+      <div class="viewfinder-frame"></div>
+      <video id="video" autoplay playsinline muted></video>
+      <div class="countdown-overlay" id="countdown"></div>
+      <div class="flash-overlay" id="flash"></div>
+    </div>
+
+    <div class="side-panel">
+      <div>
+        <div class="panel-label">Tile Size</div>
+        <div class="tile-size-group" id="tile-btns">
+          <button class="tile-btn" data-size="8">8px — Ultra Detail</button>
+          <button class="tile-btn active" data-size="16">16px — Balanced</button>
+          <button class="tile-btn" data-size="24">24px — Mosaic-y</button>
+          <button class="tile-btn" data-size="32">32px — Bold</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel-label">Image Library (loaded)</div>
+        <div class="library-preview" id="lib-preview"></div>
+      </div>
+
+      <button class="shoot-btn" id="shoot-btn" disabled>⬤ TAKE PHOTO</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ MOSAIC SCREEN ══════════ -->
+<div class="screen hidden" id="mosaic-screen">
+  <header class="mosaic-header">
+    <div class="mosaic-title">YOUR MOSAIC</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="download-btn" id="download-btn">↓ SAVE</button>
+      <button class="back-btn" id="back-btn">← RETAKE</button>
+    </div>
+  </header>
+
+  <div class="mosaic-body">
+    <div class="mosaic-container" id="mosaic-container">
+      <canvas id="mosaicCanvas"></canvas>
+      <canvas id="originalCanvas"></canvas>
+      <div class="progress-wrap" id="progress-wrap">
+        <div class="progress-label">BUILDING MOSAIC</div>
+        <div class="progress-bar-outer">
+          <div class="progress-bar-inner" id="progress-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mosaic-stats">
+      <div class="stat-block">
+        <div class="stat-val" id="stat-tiles">—</div>
+        <div class="stat-key">Total Tiles</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-val" id="stat-images">—</div>
+        <div class="stat-key">Unique Images</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-val" id="stat-size">—</div>
+        <div class="stat-key">Tile Size (px)</div>
+      </div>
+
+      <div>
+        <div class="panel-label" style="margin-bottom:8px">Compare</div>
+        <div class="compare-toggle">
+          <button class="compare-btn active" id="btn-mosaic">Mosaic</button>
+          <button class="compare-btn" id="btn-original">Original</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Hidden capture canvas -->
+<canvas id="captureCanvas" style="display:none"></canvas>
+
+<script>
+// ════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════
+const LIBRARY_COUNT = 60;   // how many source images to load
+const OUTPUT_W = 480;
+const OUTPUT_H = 360;
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+let tileSize = 16;
+let imageLibrary = [];   // [{img, r, g, b}]
+let stream = null;
+let capturedImageData = null;
+
+// ════════════════════════════════════════
+//  ELEMENTS
+// ════════════════════════════════════════
+const video         = document.getElementById('video');
+const shootBtn      = document.getElementById('shoot-btn');
+const statusPill    = document.getElementById('status-pill');
+const countdown     = document.getElementById('countdown');
+const flash         = document.getElementById('flash');
+const libPreview    = document.getElementById('lib-preview');
+const captureCanvas = document.getElementById('captureCanvas');
+const mosaicCanvas  = document.getElementById('mosaicCanvas');
+const originalCanvas= document.getElementById('originalCanvas');
+const progressWrap  = document.getElementById('progress-wrap');
+const progressBar   = document.getElementById('progress-bar');
+const boothScreen   = document.getElementById('booth-screen');
+const mosaicScreen  = document.getElementById('mosaic-screen');
+
+// ════════════════════════════════════════
+//  CAMERA
+// ════════════════════════════════════════
+async function startCamera() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+    video.srcObject = stream;
+  } catch(e) {
+    statusPill.textContent = 'NO CAMERA';
+    console.error(e);
+  }
+}
+
+// ════════════════════════════════════════
+//  LIBRARY LOADING
+// ════════════════════════════════════════
+function avgColor(ctx, w, h) {
+  const d = ctx.getImageData(0, 0, w, h).data;
+  let r=0,g=0,b=0, n=d.length/4;
+  for (let i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; }
+  return { r: r/n, g: g/n, b: b/n };
+}
+
+async function loadLibraryImage(id) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    // Use picsum with a seed for reproducibility, small size for perf
+    img.src = `https://picsum.photos/seed/${id}/64/64`;
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = c.height = 64;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0, 64, 64);
+      const color = avgColor(ctx, 64, 64);
+      resolve({ img, canvas: c, ...color });
+    };
+    img.onerror = () => resolve(null);
+  });
+}
+
+async function buildLibrary() {
+  statusPill.textContent = 'LOADING LIBRARY';
+  statusPill.className = 'status-pill loading';
+
+  const ids = Array.from({length: LIBRARY_COUNT}, (_, i) => i + 1);
+  const promises = ids.map(id => loadLibraryImage(id));
+  const results = await Promise.all(promises);
+  imageLibrary = results.filter(Boolean);
+
+  // show thumbs
+  libPreview.innerHTML = '';
+  imageLibrary.slice(0, 12).forEach(entry => {
+    const el = document.createElement('img');
+    el.className = 'lib-thumb';
+    el.src = entry.img.src;
+    el.crossOrigin = 'anonymous';
+    el.onload = () => el.classList.add('loaded');
+    libPreview.appendChild(el);
+  });
+
+  statusPill.textContent = `${imageLibrary.length} IMAGES READY`;
+  statusPill.className = 'status-pill ready';
+  shootBtn.disabled = false;
+}
+
+// ════════════════════════════════════════
+//  TILE SIZE BUTTONS
+// ════════════════════════════════════════
+document.getElementById('tile-btns').addEventListener('click', e => {
+  const btn = e.target.closest('.tile-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tile-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  tileSize = parseInt(btn.dataset.size);
+});
+
+// ════════════════════════════════════════
+//  SHOOT
+// ════════════════════════════════════════
+shootBtn.addEventListener('click', async () => {
+  if (!imageLibrary.length) return;
+  shootBtn.disabled = true;
+
+  // Countdown 3..2..1
+  for (let i = 3; i >= 1; i--) {
+    countdown.textContent = i;
+    countdown.classList.add('show');
+    await sleep(900);
+    countdown.classList.remove('show');
+    await sleep(100);
+  }
+
+  // Flash
+  flash.classList.add('flash');
+  await sleep(50);
+  flash.classList.remove('flash');
+
+  // Capture frame
+  captureCanvas.width  = OUTPUT_W;
+  captureCanvas.height = OUTPUT_H;
+  const ctx = captureCanvas.getContext('2d');
+  ctx.save();
+  ctx.scale(-1, 1); // mirror to match video
+  ctx.drawImage(video, -OUTPUT_W, 0, OUTPUT_W, OUTPUT_H);
+  ctx.restore();
+  capturedImageData = ctx.getImageData(0, 0, OUTPUT_W, OUTPUT_H);
+
+  // Show mosaic screen
+  boothScreen.classList.add('hidden');
+  mosaicScreen.classList.remove('hidden');
+  await sleep(100);
+
+  buildMosaic();
+});
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ════════════════════════════════════════
+//  MOSAIC BUILDER
+// ════════════════════════════════════════
+function closestTile(r, g, b) {
+  let best = null, bestDist = Infinity;
+  for (const tile of imageLibrary) {
+    const d = (tile.r-r)**2 + (tile.g-g)**2 + (tile.b-b)**2;
+    if (d < bestDist) { bestDist = d; best = tile; }
+  }
+  return best;
+}
+
+async function buildMosaic() {
+  const cols = Math.floor(OUTPUT_W / tileSize);
+  const rows = Math.floor(OUTPUT_H / tileSize);
+  const totalTiles = cols * rows;
+
+  mosaicCanvas.width  = cols * tileSize;
+  mosaicCanvas.height = rows * tileSize;
+  originalCanvas.width  = cols * tileSize;
+  originalCanvas.height = rows * tileSize;
+
+  const mCtx = mosaicCanvas.getContext('2d');
+  const oCtx = originalCanvas.getContext('2d');
+
+  // Draw original to compare canvas
+  oCtx.drawImage(captureCanvas, 0, 0, originalCanvas.width, originalCanvas.height);
+
+  progressWrap.classList.remove('done');
+  progressBar.style.width = '0%';
+
+  document.getElementById('stat-tiles').textContent = totalTiles.toLocaleString();
+  document.getElementById('stat-images').textContent = imageLibrary.length;
+  document.getElementById('stat-size').textContent = tileSize;
+
+  // source pixel data
+  const src = capturedImageData;
+
+  let done = 0;
+
+  // Process in chunks to avoid freezing
+  const CHUNK = 20;
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      // sample center pixel of this tile region in original
+      const px = Math.floor((col + 0.5) * tileSize);
+      const py = Math.floor((row + 0.5) * tileSize);
+      // scale back to source coords
+      const sx = Math.floor(px * OUTPUT_W / (cols * tileSize));
+      const sy = Math.floor(py * OUTPUT_H / (rows * tileSize));
+      const idx = (sy * OUTPUT_W + sx) * 4;
+      const r = src.data[idx], g = src.data[idx+1], b = src.data[idx+2];
+
+      const tile = closestTile(r, g, b);
+      if (tile) {
+        mCtx.drawImage(tile.canvas, col * tileSize, row * tileSize, tileSize, tileSize);
+      }
+
+      done++;
+      if (done % CHUNK === 0) {
+        progressBar.style.width = (done/totalTiles*100) + '%';
+        await sleep(0); // yield
+      }
+    }
+  }
+
+  progressBar.style.width = '100%';
+  await sleep(200);
+  progressWrap.classList.add('done');
+}
+
+// ════════════════════════════════════════
+//  COMPARE TOGGLE
+// ════════════════════════════════════════
+document.getElementById('btn-mosaic').addEventListener('click', () => {
+  originalCanvas.classList.remove('show');
+  document.getElementById('btn-mosaic').classList.add('active');
+  document.getElementById('btn-original').classList.remove('active');
+});
+document.getElementById('btn-original').addEventListener('click', () => {
+  originalCanvas.classList.add('show');
+  document.getElementById('btn-original').classList.add('active');
+  document.getElementById('btn-mosaic').classList.remove('active');
+});
+
+// ════════════════════════════════════════
+//  DOWNLOAD
+// ════════════════════════════════════════
+document.getElementById('download-btn').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = mosaicCanvas.toDataURL('image/png');
+  a.download = 'mosaic.png';
+  a.click();
+});
+
+// ════════════════════════════════════════
+//  BACK
+// ════════════════════════════════════════
+document.getElementById('back-btn').addEventListener('click', () => {
+  mosaicScreen.classList.add('hidden');
+  boothScreen.classList.remove('hidden');
+  shootBtn.disabled = false;
+  // reset compare
+  originalCanvas.classList.remove('show');
+  document.getElementById('btn-mosaic').classList.add('active');
+  document.getElementById('btn-original').classList.remove('active');
+});
+
+// ════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════
+startCamera();
+buildLibrary();
+</script>
+</body>
+</html>
