@@ -215,7 +215,7 @@
   }
   .lib-thumb.loaded { opacity: 1; }
 
-  /* ── MOSAIC SCREEN ── */
+  /* MOSAIC SCREEN */
   #mosaic-screen {
     background: #050505;
     gap: 0;
@@ -516,7 +516,7 @@ async function startCamera() {
 }
 
 // ════════════════════════════════════════
-//  LIBRARY LOADING
+//   LOADING IN LIBRARY
 // ════════════════════════════════════════
 function avgColor(ctx, w, h) {
   const d = ctx.getImageData(0, 0, w, h).data;
@@ -552,7 +552,7 @@ async function buildLibrary() {
   const results = await Promise.all(promises);
   imageLibrary = results.filter(Boolean);
 
-  // show thumbs
+  // show images 
   libPreview.innerHTML = '';
   imageLibrary.slice(0, 12).forEach(entry => {
     const el = document.createElement('img');
@@ -580,7 +580,7 @@ document.getElementById('tile-btns').addEventListener('click', e => {
 });
 
 // ════════════════════════════════════════
-//  SHOOT
+//  click
 // ════════════════════════════════════════
 shootBtn.addEventListener('click', async () => {
   if (!imageLibrary.length) return;
@@ -621,7 +621,7 @@ shootBtn.addEventListener('click', async () => {
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ════════════════════════════════════════
-//  MOSAIC BUILDER
+//  MOSAIC BUILDER FUNCTION
 // ════════════════════════════════════════
 function closestTile(r, g, b) {
   let best = null, bestDist = Infinity;
@@ -692,7 +692,7 @@ async function buildMosaic() {
 }
 
 // ════════════════════════════════════════
-//  COMPARE TOGGLE
+//  COMPARE BETWEEN IMAGES
 // ════════════════════════════════════════
 document.getElementById('btn-mosaic').addEventListener('click', () => {
   originalCanvas.classList.remove('show');
